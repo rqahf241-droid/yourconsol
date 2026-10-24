@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AeroConsoles — Твой гид по консолям и VR</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            display: ['"Space Grotesk"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Стиль Frutiger Aero */
+    body {
+      background: radial-gradient(circle at 50% 10%, #1e5a82 0%, #0c2b44 35%, #05131f 100%);
+      color: #e2f3fc;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .aero-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(70px);
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    .orb-1 { width: 450px; height: 450px; background: #00e1d9; top: -100px; left: -100px; }
+    .orb-2 { width: 500px; height: 500px; background: #0284c7; top: 40%; right: -150px; }
+    .orb-3 { width: 350px; height: 350px; background: #38bdf8; bottom: -50px; left: 20%; }
+
+    .glass-card {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.04) 100%);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      box-shadow: 0 16px 35px 0 rgba(0, 30, 60, 0.35), inset 0 1px 1px 0 rgba(255, 255, 255, 0.6);
+    }
+
+    .glass-card-interactive {
+      transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .glass-card-interactive:hover {
+      transform: translateY(-6px) scale(1.02);
+      border-color: rgba(56, 189, 248, 0.7);
+      box-shadow: 0 20px 45px rgba(2, 132, 199, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.8);
+    }
+
+    .aero-btn {
+      background: linear-gradient(180deg, rgba(255,255,255,0.7) 0%, rgba(56, 189, 248, 0.85) 48%, rgba(2, 132, 199, 0.95) 52%, rgba(3, 105, 161, 1) 100%);
+      box-shadow: 0 8px 20px rgba(2, 132, 199, 0.45), inset 0 2px 2px rgba(255, 255, 255, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      transition: all 0.25s ease;
+    }
+    .aero-btn:hover {
+      filter: brightness(1.12);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 25px rgba(56, 189, 248, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.9);
+    }
+    .aero-btn:active {
+      transform: translateY(1px);
+    }
+
+    .aero-option {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(12px);
+      transition: all 0.2s ease;
+    }
+    .aero-option:hover {
+      background: linear-gradient(180deg, rgba(56, 189, 248, 0.35) 0%, rgba(2, 132, 199, 0.25) 100%);
+      border-color: rgba(56, 189, 248, 0.7);
+      transform: scale(1.02);
+    }
+
+    .custom-scroll::-webkit-scrollbar { width: 6px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.4); border-radius: 4px; }
+  </style>
+</head>
+<body class="relative">
+
+  <!-- Световые круги Frutiger Aero -->
+  <div class="aero-orb orb-1"></div>
+  <div class="aero-orb orb-2"></div>
+  <div class="aero-orb orb-3"></div>
+
+  <!-- Кнопка бокового меню истории (левый верхний угол) -->
+  <div class="fixed top-5 left-5 z-50">
+    <button onclick="toggleHistory(true)" class="glass-card px-4 py-2.5 rounded-2xl flex items-center gap-2 hover:border-cyan-300 transition text-sm font-semibold tracking-wide">
+      <span>📖</span> История подборов
+    </button>
+  </div>
+
+  <!-- Боковая шторка Истории -->
+  <div id="historyModal" class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 hidden transition-opacity flex">
+    <div class="w-full max-w-md bg-[#071927]/95 border-r border-white/20 h-full p-6 flex flex-col justify-between shadow-2xl">
+      <div>
+        <div class="flex items-center justify-between pb-4 border-b border-white/10 mb-4">
+          <div class="text-xl font-display font-bold flex items-center gap-2">
+            <span>✨</span> Твоя история
+          </div>
+          <button onclick="toggleHistory(false)" class="text-2xl text-slate-400 hover:text-white">&times;</button>
+        </div>
+        <div id="historyList" class="space-y-3 overflow-y-auto max-h-[75vh] pr-2 custom-scroll">
+          <div class="text-sm text-cyan-200/60">Подборов пока нет. Пройди тест!</div>
+        </div>
+      </div>
+      <button onclick="clearHistory()" class="text-xs text-rose-300 hover:text-rose-100 py-2 border border-rose-500/30 rounded-xl transition">
+        Очистить историю
+      </button>
+    </div>
+    <div class="flex-1" onclick="toggleHistory(false)"></div>
+  </div>
+
+  <!-- 1. ПРИВЕТСТВЕННЫЙ ЭКРАН -->
+  <section id="welcomeScreen" class="relative z-10 min-h-screen flex flex-col items-center justify-center text-center px-4 transition-all duration-700">
+    <div class="glass-card max-w-3xl p-8 md:p-12 rounded-3xl mx-auto shadow-2xl relative overflow-hidden">
+      <div class="w-20 h-20 mx-auto mb-6 rounded-2xl glass-card flex items-center justify-center text-4xl shadow-lg">
+        🌐
+      </div>
+      <span class="inline-block px-4 py-1 rounded-full text-xs font-bold tracking-wider uppercase bg-cyan-400/20 text-cyan-200 border border-cyan-400/30 mb-4">
+        Aero Engine 2026
+      </span>
+      <h1 class="text-4xl md:text-5xl font-display font-black tracking-tight mb-4 text-white">
+        Индивидуальный подбор консолей и VR под ваш стиль
+      </h1>
+      <p class="text-cyan-100/80 text-base md:text-lg max-w-xl mx-auto mb-8 font-light">
+        Этот сайт создан для точной подборки консолей и VR-шлемов под ваши привычки, любимую атмосферу и ритм игры. Найди свой сетап и лучшие игры к нему за минуту!
+      </p>
+      <button onclick="startApp()" class="aero-btn text-white text-lg font-bold px-10 py-4 rounded-2xl uppercase tracking-wider inline-flex items-center gap-3">
+        <span>Начать</span>
+        <span class="text-xl">➔</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- 2. ГЛАВНЫЙ ЭКРАН ХАБА (Скрыт по умолчанию) -->
+  <main id="mainHub" class="relative z-10 hidden opacity-0 transition-opacity duration-700 max-w-6xl mx-auto px-4 pt-20 pb-24">
+    
+    <!-- Заголовок -->
+    <div class="text-center mb-12">
+      <h2 class="text-3xl md:text-4xl font-display font-bold text-white mb-2">Что будем подбирать сегодня?</h2>
+      <p class="text-cyan-200/70 text-sm">Выбери категорию или изучи список девайсов ниже</p>
+    </div>
+
+    <!-- 2 КВАДРАТА ДЛЯ ВЫБОРА -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-20 max-w-4xl mx-auto">
+      
+      <!-- Квадрат 1: Консоли -->
+      <div onclick="startQuiz('console')" class="glass-card glass-card-interactive p-8 rounded-3xl cursor-pointer flex flex-col items-center text-center group">
+        <div class="w-24 h-24 rounded-2xl glass-card flex items-center justify-center text-5xl mb-6 group-hover:scale-110 transition shadow-inner">
+          🎮
+        </div>
+        <h3 class="text-2xl font-display font-bold text-white mb-2">Подобрать консоль</h3>
+        <p class="text-cyan-100/70 text-sm mb-6">
+          Быстрый опрос по портативности, графике, поколению игр и онлайну + подборка игр.
+        </p>
+        <span class="aero-btn px-6 py-2.5 rounded-xl text-sm font-bold text-white mt-auto">
+          Пройти тест ➔
+        </span>
+      </div>
+
+      <!-- Квадрат 2: VR -->
+      <div onclick="startQuiz('vr')" class="glass-card glass-card-interactive p-8 rounded-3xl cursor-pointer flex flex-col items-center text-center group">
+        <div class="w-24 h-24 rounded-2xl glass-card flex items-center justify-center text-5xl mb-6 group-hover:scale-110 transition shadow-inner">
+          🥽
+        </div>
+        <h3 class="text-2xl font-display font-bold text-white mb-2">Подобрать VR</h3>
+        <p class="text-cyan-100/70 text-sm mb-6">
+          Тест на погружение: онлайн, графика, подключение к ПК и лучшие VR-миры под твой шлем.
+        </p>
+        <span class="aero-btn px-6 py-2.5 rounded-xl text-sm font-bold text-white mt-auto">
+          Подобрать шлем ➔
+        </span>
+      </div>
+
+    </div>
+
+    <!-- КАТАЛОГ ДЕВАЙСОВ -->
+    <section>
+      <div class="flex items-center justify-between mb-8 pb-4 border-b border-white/10">
+        <div>
+          <h3 class="text-2xl font-display font-bold text-white">Каталог платформ и шлемов</h3>
+          <p class="text-xs text-cyan-200/70">Нажми на любую карточку, чтобы узнать подробности</p>
+        </div>
+      </div>
+
+      <!-- Сетка карточек -->
+      <div id="catalogGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Карточки будут добавлены скриптом -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- МОДАЛЬНОЕ ОКНО ДЕТАЛЕЙ КОНСОЛИ -->
+  <div id="detailModal" class="fixed inset-0 bg-black/70 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card max-w-lg w-full p-6 md:p-8 rounded-3xl relative text-left">
+      <button onclick="closeDetails()" class="absolute top-5 right-5 text-2xl text-slate-400 hover:text-white">&times;</button>
+      <div id="detailContent"></div>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНЫЙ ЭКРАН ОПРОСНИКА (QUIZ) -->
+  <div id="quizModal" class="fixed inset-0 bg-black/75 backdrop-blur-lg z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card max-w-xl w-full p-6 md:p-8 rounded-3xl relative">
+      <button onclick="closeQuiz()" class="absolute top-5 right-5 text-2xl text-slate-400 hover:text-white">&times;</button>
+      
+      <!-- Контейнер вопроса -->
+      <div id="quizBody"></div>
+    </div>
+  </div>
+
+  <script>
+    // --- 1. БАЗА ДАННЫХ КОНСОЛЕЙ И VR ---
+    const catalog = [
+      {
+        id: 'ps5',
+        name: 'PlayStation 5',
+        type: 'console',
+        price: 'от 55 000 ₽',
+        icon: '🎮',
+        bg: 'from-blue-600/30 to-indigo-800/20',
+        desc: 'Флагманская консоль 9-го поколения от Sony. Молниеносный SSD, трассировка лучей, 4K гейминг и геймпад DualSense с виброотдачей нового поколения.',
+        games: ['Marvel’s Spider-Man 2', 'God of War: Ragnarök', 'The Last of Us Part I', 'Demon’s Souls'],
+        isMeta: false
+      },
+      {
+        id: 'ps4',
+        name: 'PlayStation 4',
+        type: 'console',
+        price: 'от 18 000 ₽ (б/у)',
+        icon: '🕹️',
+        bg: 'from-blue-700/30 to-blue-900/20',
+        desc: 'Легендарная консоль с огромной библиотекой доступных шедевров. Идеально для экономного погружения в сотни культовых сюжетных игр.',
+        games: ['Bloodborne', 'Uncharted 4', 'Ghost of Tsushima', 'Horizon Zero Dawn'],
+        isMeta: false
+      },
+      {
+        id: 'ps3',
+        name: 'PlayStation 3',
+        type: 'console',
+        price: 'от 7 000 ₽ (б/у)',
+        icon: '📼',
+        bg: 'from-slate-700/30 to-blue-950/20',
+        desc: 'Винтажная классика и золотая эра гейминга седьмого поколения. Бесплатный онлайн на серверах фанатов и шедевры эры PS3.',
+        games: ['Metal Gear Solid 4', 'Grand Theft Auto IV', 'Killzone 2', 'Red Dead Redemption'],
+        isMeta: false
+      },
+      {
+        id: 'wii',
+        name: 'Nintendo Wii',
+        type: 'console',
+        price: 'от 6 000 ₽ (б/у)',
+        icon: '🎳',
+        bg: 'from-teal-600/30 to-cyan-900/20',
+        desc: 'Культовая приставка с революционным управлением движениями через Wii Remote. Непревзойденный фаворит для веселых соревнований в кругу семьи.',
+        games: ['Wii Sports', 'Super Mario Galaxy 1 & 2', 'The Legend of Zelda: Twilight Princess', 'Just Dance'],
+        isMeta: false
+      },
+      {
+        id: 'switch',
+        name: 'Nintendo Switch',
+        type: 'console',
+        price: 'от 24 000 ₽',
+        icon: '🔴🔵',
+        bg: 'from-red-600/30 to-blue-600/20',
+        desc: 'Идеальный портативный гибрид: можно играть дома на ТВ или взять консоль в метро, поезд и самолет. Огромный список эксклюзивов Nintendo.',
+        games: ['Zelda: Breath of the Wild', 'Super Mario Odyssey', 'Mario Kart 8 Deluxe', 'Animal Crossing'],
+        isMeta: false
+      },
+      {
+        id: 'switch2',
+        name: 'Nintendo Switch 2',
+        type: 'console',
+        price: 'Ожидается ~45 000 ₽',
+        icon: '✨',
+        bg: 'from-emerald-600/30 to-cyan-800/20',
+        desc: 'Преемник оригинального Switch нового поколения: увеличенная производительность, поддержка DLSS, улучшенный дисплей и новые игры.',
+        games: ['Новая часть Mario 3D', 'Metroid Prime 4: Beyond', 'Next-gen Pokemon'],
+        isMeta: false
+      },
+      {
+        id: 'quest2',
+        name: 'Meta Quest 2',
+        type: 'vr',
+        price: 'от 26 000 ₽',
+        icon: '🥽',
+        bg: 'from-purple-600/30 to-indigo-900/20',
+        desc: 'Самый доступный и массовый автономный VR-шлем в мире. Работает без проводов и ПК, но легко подключается к компьютеру по Wi-Fi или кабелю.',
+        games: ['Beat Saber', 'Resident Evil 4 VR', 'Superhot VR', 'VRChat'],
+        isMeta: true
+      },
+      {
+        id: 'quest3',
+        name: 'Meta Quest 3',
+        type: 'vr',
+        price: 'от 53 000 ₽',
+        icon: '⚡',
+        bg: 'from-cyan-600/30 to-sky-900/20',
+        desc: 'Флагманский VR/MR-шлем с четкими блинчатыми (Pancake) линзами, мощным чипом Snapdragon XR2 Gen 2 и реалистичной цветной сквозной камерой.',
+        games: ['Batman: Arkham Shadow', 'Asgard’s Wrath 2', 'Half-Life: Alyx (через ПК)', 'Blade & Sorcery'],
+        isMeta: true
+      },
+      {
+        id: 'quest3s',
+        name: 'Meta Quest 3S',
+        type: 'vr',
+        price: 'от 34 000 ₽',
+        icon: '🎯',
+        bg: 'from-indigo-600/30 to-blue-900/20',
+        desc: 'Новый доступный хит: мощь процессора от Quest 3 в корпусе и оптике популярного Quest 2 по привлекательной цене.',
+        games: ['Batman: Arkham Shadow', 'Gorilla Tag', 'Bonelab', 'Beat Saber'],
+        isMeta: true
+      }
+    ];
+
+    // --- 2. РЕНДЕР КАТАЛОГА ---
+    function renderCatalog() {
+      const grid = document.getElementById('catalogGrid');
+      grid.innerHTML = catalog.map(item => `
+        <div onclick="showDetails('${item.id}')" class="glass-card glass-card-interactive p-5 rounded-2xl cursor-pointer flex flex-col justify-between">
+          <div>
+            <!-- Изображение / Иконка -->
+            <div class="h-32 rounded-xl bg-gradient-to-br ${item.bg} flex items-center justify-center text-5xl mb-4 border border-white/20 shadow-inner">
+              ${item.icon}
+            </div>
+            
+            <!-- Цена -->
+            <div class="text-cyan-300 font-bold text-sm tracking-wide mb-1">${item.price}</div>
+            
+            <!-- Название -->
+            <h4 class="text-lg font-display font-bold text-white mb-2">${item.name}</h4>
+          </div>
+
+          <div>
+            ${item.isMeta ? `
+              <div class="text-[10px] text-amber-300/90 leading-tight mt-2 p-1.5 rounded-lg bg-amber-950/40 border border-amber-500/20">
+                * Meta признана экстремистской организацией на территории РФ
+              </div>
+            ` : ''}
+            <div class="text-xs text-cyan-200/70 mt-3 flex items-center gap-1">
+              <span>Подробнее</span> <span>➔</span>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // --- 3. ПЕРЕКЛЮЧЕНИЕ ЭКРАНОВ ---
+    function startApp() {
+      const welcome = document.getElementById('welcomeScreen');
+      const hub = document.getElementById('mainHub');
+      
+      welcome.classList.add('opacity-0', '-translate-y-10');
+      setTimeout(() => {
+        welcome.classList.add('hidden');
+        hub.classList.remove('hidden');
+        setTimeout(() => {
+          hub.classList.remove('opacity-0');
+          renderCatalog();
+        }, 50);
+      }, 500);
+    }
+
+    // --- 4. ДЕТАЛЬНОЕ ОКНО ---
+    function showDetails(id) {
+      const item = catalog.find(x => x.id === id);
+      if (!item) return;
+
+      const modal = document.getElementById('detailModal');
+      const content = document.getElementById('detailContent');
+
+      content.innerHTML = `
+        <div class="h-32 rounded-2xl bg-gradient-to-br ${item.bg} flex items-center justify-center text-5xl mb-4 border border-white/30">
+          ${item.icon}
+        </div>
+        <div class="text-cyan-300 font-bold text-sm mb-1">${item.price}</div>
+        <h3 class="text-2xl font-display font-bold text-white mb-3">${item.name}</h3>
+        <p class="text-slate-200 text-sm leading-relaxed mb-4">${item.desc}</p>
+        
+        <div class="mb-4">
+          <div class="text-xs font-bold text-cyan-200 uppercase mb-2">Культовые игры платформы:</div>
+          <div class="flex flex-wrap gap-1.5">
+            ${item.games.map(g => `<span class="px-2.5 py-1 rounded-lg text-xs bg-white/10 border border-white/20 text-white">${g}</span>`).join('')}
+          </div>
+        </div>
+
+        ${item.isMeta ? `
+          <div class="text-[11px] text-amber-300 bg-amber-950/60 p-2.5 rounded-xl border border-amber-500/30">
+            * Meta признана экстремистской организацией на территории РФ
+          </div>
+        ` : ''}
+      `;
+      modal.classList.remove('hidden');
+    }
+
+    function closeDetails() {
+      document.getElementById('detailModal').classList.add('hidden');
+    }
+
+    // --- 5. ВОПРОСЫ И ЛОГИКА ОПРОСНИКА ---
+    let currentQuizMode = null; // 'console' или 'vr'
+    let currentStep = 0;
+    let quizAnswers = {};
+    let pickedDevice = null;
+
+    // ВАШИ ВОПРОСЫ И ОТВЕТЫ СТРОГО ПО ЗАПРОСУ:
+    const consoleSteps = [
+      {
+        key: 'portable',
+        q: 'Хотите ли вы играть в портативе?',
+        options: [
+          { text: 'Да', val: 'yes' },
+          { text: 'Нет', val: 'no' },
+          { text: 'Не важно', val: 'any' }
+        ]
+      },
+      {
+        key: 'graphics',
+        q: 'Важна ли вам графика?',
+        options: [
+          { text: 'Да', val: 'yes' },
+          { text: 'Нет', val: 'no' }
+        ]
+      },
+      {
+        key: 'gamesAge',
+        q: 'В какие вы хотите играть игры?',
+        options: [
+          { text: 'Новые', val: 'new' },
+          { text: 'Старые', val: 'old' }
+        ]
+      },
+      {
+        key: 'online',
+        q: 'Важен ли вам онлайн?',
+        options: [
+          { text: 'Да', val: 'yes' },
+          { text: 'Нет', val: 'no' }
+        ]
+      }
+    ];
+
+    const vrSteps = [
+      {
+        key: 'online',
+        q: 'Важны ли вам онлайн игры?',
+        options: [
+          { text: 'Да', val: 'yes' },
+          { text: 'Нет', val: 'no' }
+        ]
+      },
+      {
+        key: 'graphics',
+        q: 'Хотите графику?',
+        options: [
+          { text: 'Да', val: 'yes' },
+          { text: 'Нет', val: 'no' }
+        ]
+      },
+      {
+        key: 'pc',
+        q: 'Планируете подключать шлем к ПК?',
+        options: [
+          { text: 'Да', val: 'yes' },
+          { text: 'Нет', val: 'no' }
+        ]
+      },
+      {
+        key: 'budget',
+        q: 'Какой у вас бюджет на покупку?',
+        options: [
+          { text: 'Минимальный', val: 'low' },
+          { text: 'Средний', val: 'mid' },
+          { text: 'Максимальный', val: 'high' }
+        ]
+      }
+    ];
+
+    // Шаги опроса на игры под выбранное устройство
+    const consoleGameSteps = [
+      {
+        key: 'genre',
+        q: 'Какой жанр игр вам ближе всего?',
+        options: [
+          { text: 'Шутеры и динамичные экшены', val: 'action' },
+          { text: 'Сюжетные приключения и кино', val: 'story' },
+          { text: 'Платформеры и аркады', val: 'platform' },
+          { text: 'Гонки и спортивные игры', val: 'sports' }
+        ]
+      },
+      {
+        key: 'style',
+        q: 'С кем чаще всего играете?',
+        options: [
+          { text: 'Один, ради сюжета и погружения', val: 'solo' },
+          { text: 'Вместе с друзьями / семьей на одном экране', val: 'party' }
+        ]
+      }
+    ];
+
+    const vrGameSteps = [
+      {
+        key: 'vrGenre',
+        q: 'Какой игровой опыт хотите в VR?',
+        options: [
+          { text: 'Активное движение и ритм (фитнес/музыка)', val: 'rhythm' },
+          { text: 'Шутеры, битвы и онлайн-арены', val: 'shooter' },
+          { text: 'Атмосферные сюжетные истории и хорроры', val: 'story' }
+        ]
+      },
+      {
+        key: 'vestibular',
+        q: 'Ваш опыт в виртуальной реальности?',
+        options: [
+          { text: 'Я новичок (нужны игры без укачивания)', val: 'easy' },
+          { text: 'Опытный игрок (свободное перемещение)', val: 'hard' }
+        ]
+      }
+    ];
+
+    function startQuiz(mode) {
+      currentQuizMode = mode;
+      currentStep = 0;
+      quizAnswers = {};
+      pickedDevice = null;
+      document.getElementById('quizModal').classList.remove('hidden');
+      renderQuestion();
+    }
+
+    function closeQuiz() {
+      document.getElementById('quizModal').classList.add('hidden');
+    }
+
+    function renderQuestion() {
+      const container = document.getElementById('quizBody');
+      const activeSteps = currentQuizMode === 'console' ? consoleSteps : vrSteps;
+
+      if (currentStep < activeSteps.length) {
+        // Этап 1: Подбор девайса
+        const step = activeSteps[currentStep];
+        container.innerHTML = `
+          <div class="text-xs font-bold text-cyan-300 uppercase tracking-widest mb-2">
+            Шаг ${currentStep + 1} из ${activeSteps.length}
+          </div>
+          <h3 class="text-2xl font-display font-bold text-white mb-6">${step.q}</h3>
+          <div class="space-y-3">
+            ${step.options.map((opt, i) => `
+              <button onclick="handleAnswer('${step.key}', '${opt.val}')" class="aero-option w-full py-4 px-6 rounded-2xl text-left font-semibold text-slate-100 flex items-center justify-between">
+                <span>${opt.text}</span>
+                <span class="text-cyan-300">➔</span>
+              </button>
+            `).join('')}
+          </div>
+        `;
+      } else if (!pickedDevice) {
+        // Рассчитываем и показываем консоль/VR, затем предлагаем опрос на игры
+        calculateDevice();
+      } else {
+        // Этап 2: Вопросы по играм
+        const gameSteps = currentQuizMode === 'console' ? consoleGameSteps : vrGameSteps;
+        const gameStepIdx = currentStep - activeSteps.length;
+
+        if (gameStepIdx < gameSteps.length) {
+          const step = gameSteps[gameStepIdx];
+          container.innerHTML = `
+            <div class="text-xs font-bold text-cyan-300 uppercase tracking-widest mb-2">
+              Подбор игр для ${pickedDevice.name} (вопрос ${gameStepIdx + 1}/${gameSteps.length})
+            </div>
+            <h3 class="text-2xl font-display font-bold text-white mb-6">${step.q}</h3>
+            <div class="space-y-3">
+              ${step.options.map(opt => `
+                <button onclick="handleGameAnswer('${step.key}', '${opt.val}')" class="aero-option w-full py-4 px-6 rounded-2xl text-left font-semibold text-slate-100 flex items-center justify-between">
+                  <span>${opt.text}</span>
+                  <span class="text-cyan-300">➔</span>
+                </button>
+              `).join('')}
+            </div>
+          `;
+        } else {
+          // Финальный экран: Консоль + Выбранные игры
+          showFinalResult();
+        }
+      }
+    }
+
+    function handleAnswer(key, val) {
+      quizAnswers[key] = val;
+      currentStep++;
+      renderQuestion();
+    }
+
+    function handleGameAnswer(key, val) {
+      quizAnswers[key] = val;
+      currentStep++;
+      renderQuestion();
+    }
+
+    // Алгоритм подбора девайса по ответам
+    function calculateDevice() {
+      if (currentQuizMode === 'console') {
+        if (quizAnswers.portable === 'yes') {
+          pickedDevice = (quizAnswers.graphics === 'yes' && quizAnswers.gamesAge === 'new') 
+            ? catalog.find(x => x.id === 'switch2') || catalog.find(x => x.id === 'switch')
+            : catalog.find(x => x.id === 'switch');
+        } else {
+          if (quizAnswers.gamesAge === 'old') {
+            pickedDevice = quizAnswers.online === 'no' ? catalog.find(x => x.id === 'wii') : catalog.find(x => x.id === 'ps3');
+          } else {
+            pickedDevice = quizAnswers.graphics === 'yes' ? catalog.find(x => x.id === 'ps5') : catalog.find(x => x.id === 'ps4');
+          }
+        }
+      } else {
+        // VR
+        if (quizAnswers.budget === 'low') {
+          pickedDevice = catalog.find(x => x.id === 'quest2');
+        } else if (quizAnswers.budget === 'high' || quizAnswers.graphics === 'yes') {
+          pickedDevice = catalog.find(x => x.id === 'quest3');
+        } else {
+          pickedDevice = catalog.find(x => x.id === 'quest3s');
+        }
+      }
+
+      // Показываем промежуточный результат и запускаем опрос на игры
+      const container = document.getElementById('quizBody');
+      container.innerHTML = `
+        <div class="text-center py-4">
+          <div class="text-xs font-bold text-cyan-300 uppercase tracking-widest mb-2">Платформа определена!</div>
+          <div class="text-5xl mb-3">${pickedDevice.icon}</div>
+          <h3 class="text-3xl font-display font-bold text-white mb-2">${pickedDevice.name}</h3>
+          <div class="text-cyan-300 font-semibold text-sm mb-4">${pickedDevice.price}</div>
+          <p class="text-slate-200 text-sm max-w-md mx-auto mb-6">${pickedDevice.desc}</p>
+          
+          ${pickedDevice.isMeta ? `
+            <div class="text-[11px] text-amber-300 bg-amber-950/60 p-2.5 rounded-xl border border-amber-500/30 mb-6">
+              * Meta признана экстремистской организацией на территории РФ
+            </div>
+          ` : ''}
+
+          <button onclick="renderQuestion()" class="aero-btn text-white font-bold py-3 px-8 rounded-xl uppercase tracking-wider text-sm">
+            Подобрать игры под эту систему ➔
+          </button>
+        </div>
+      `;
+    }
+
+    // Подбор игр на основе ответов второго опроса
+    function calculateGames() {
+      if (currentQuizMode === 'console') {
+        if (quizAnswers.style === 'party') {
+          return ['Mario Kart 8 Deluxe', 'Super Smash Bros', 'It Takes Two', 'Wii Sports Club'];
+        }
+        if (quizAnswers.genre === 'action') {
+          return ['Spider-Man 2', 'God of War Ragnarök', 'Ghost of Tsushima'];
+        }
+        if (quizAnswers.genre === 'platform') {
+          return ['Super Mario Odyssey', 'Astro Bot', 'Rayman Legends'];
+        }
+        if (quizAnswers.genre === 'sports') {
+          return ['EA Sports FC', 'Gran Turismo 7', 'Forza Horizon 5'];
+        }
+        return ['The Last of Us Part I', 'Zelda: Tears of the Kingdom', 'Red Dead Redemption 2'];
+      } else {
+        // VR
+        if (quizAnswers.vrGenre === 'rhythm') {
+          return ['Beat Saber', 'Pistol Whip', 'Synth Riders'];
+        }
+        if (quizAnswers.vrGenre === 'shooter') {
+          return ['Pavlov VR', 'Contractors Showdown', 'Superhot VR'];
+        }
+        return ['Half-Life: Alyx', 'Batman: Arkham Shadow', 'Resident Evil 4 VR'];
+      }
+    }
+
+    function showFinalResult() {
+      const recGames = calculateGames();
+      const container = document.getElementById('quizBody');
+
+      // Сохраняем в историю
+      saveToHistory(pickedDevice.name, recGames);
+
+      container.innerHTML = `
+        <div class="text-center py-2">
+          <div class="inline-block px-3 py-1 rounded-full text-xs font-bold bg-cyan-400/20 text-cyan-200 border border-cyan-400/30 mb-3">
+            🎉 Ваш идеальный комплект готов!
+          </div>
+          <h3 class="text-3xl font-display font-extrabold text-white mb-1">${pickedDevice.name}</h3>
+          <div class="text-cyan-300 font-bold mb-4">${pickedDevice.price}</div>
+
+          <div class="glass-card p-4 rounded-2xl text-left mb-5">
+            <div class="text-xs font-bold text-cyan-200 uppercase mb-2">Рекомендуемые игры для вас:</div>
+            <ul class="space-y-1.5 text-sm text-slate-100">
+              ${recGames.map(g => `<li class="flex items-center gap-2"><span>⭐</span> <b>${g}</b></li>`).join('')}
+            </ul>
+          </div>
+
+          ${pickedDevice.isMeta ? `
+            <div class="text-[11px] text-amber-300 bg-amber-950/60 p-2 rounded-xl border border-amber-500/30 mb-5">
+              * Meta признана экстремистской организацией на территории РФ
+            </div>
+          ` : ''}
+
+          <div class="flex gap-3 justify-center">
+            <button onclick="closeQuiz()" class="aero-btn text-white font-bold py-2.5 px-6 rounded-xl text-sm">
+              Отлично
+            </button>
+            <button onclick="startQuiz('${currentQuizMode}')" class="aero-option text-white font-semibold py-2.5 px-5 rounded-xl text-sm">
+              Пройти заново
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    // --- 6. ИСТОРИЯ ВЫБОРА (localStorage) ---
+    function saveToHistory(device, games) {
+      let history = JSON.parse(localStorage.getItem('aero_history') || '[]');
+      const date = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      history.unshift({ device, games, date });
+      localStorage.setItem('aero_history', JSON.stringify(history.slice(0, 10)));
+    }
+
+    function toggleHistory(show) {
+      const modal = document.getElementById('historyModal');
+      if (show) {
+        modal.classList.remove('hidden');
+        renderHistory();
+      } else {
+        modal.classList.add('hidden');
+      }
+    }
+
+    function renderHistory() {
+      const box = document.getElementById('historyList');
+      const history = JSON.parse(localStorage.getItem('aero_history') || '[]');
+      if (history.length === 0) {
+        box.innerHTML = `<div class="text-sm text-cyan-200/60">История пуста. Пройди подборку!</div>`;
+        return;
+      }
+      box.innerHTML = history.map(item => `
+        <div class="glass-card p-3.5 rounded-xl text-xs space-y-1">
+          <div class="flex justify-between font-bold text-cyan-300 text-sm">
+            <span>${item.device}</span>
+            <span class="text-slate-400 text-xs">${item.date}</span>
+          </div>
+          <div class="text-slate-300">Игры: ${item.games.join(', ')}</div>
+        </div>
+      `).join('');
+    }
+
+    function clearHistory() {
+      localStorage.removeItem('aero_history');
+      renderHistory();
+    }
+  </script>
+</body>
+</html>
